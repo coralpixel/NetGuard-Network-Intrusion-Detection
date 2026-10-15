@@ -30,7 +30,18 @@ class PortScanDetector:
         Returns:
             dict or None: Alert information if a new port scan is detected.
         """
+          # Validate source IP
+        if not isinstance(source_ip, str) or not source_ip.strip():
+            raise ValueError("source_ip must be a non-empty string")
 
+        # Validate destination port
+        if not isinstance(destination_port, int):
+            raise ValueError("destination_port must be an integer")
+
+        if not 1 <= destination_port <= 65535:
+            raise ValueError(
+                "destination_port must be between 1 and 65535"
+            )
         current_time = datetime.now()
 
         self.connections[source_ip].append(

@@ -15,6 +15,9 @@ class TrafficAnomalyDetector:
         # Stores timestamps of connections for each source IP
         self.connections = defaultdict(list)
 
+        # Keeps track of IPs that already triggered an alert
+        self.alerted_ips = set()
+
     def record_connection(self, source_ip):
         """
         Record a connection from a source IP.
@@ -23,7 +26,7 @@ class TrafficAnomalyDetector:
             source_ip (str): IP address generating the traffic.
 
         Returns:
-            dict or None: Alert if traffic threshold is exceeded.
+            dict or None: Alert if a new traffic anomaly is detected.
         """
 
         current_time = datetime.now()
@@ -34,14 +37,24 @@ class TrafficAnomalyDetector:
 
         connection_count = len(self.connections[source_ip])
 
-        if connection_count > self.traffic_threshold:
-            return self._create_alert(
-                source_ip,
-                connection_count,
-                current_time
-            )
+        # Traffic has returned below the threshold.
+        # Allow the IP to trigger a new alert later.
+        if connection_count <= self.traffic_threshold:
+            self.alerted_ips.discard(source_ip)
+            return None
 
-        return None
+        # Prevent repeated alerts for the same traffic spike.
+        if source_ip in self.alerted_ips:
+            return None
+
+        # First detection of this traffic anomaly.
+        self.alerted_ips.add(source_ip)
+
+        return self._create_alert(
+            source_ip,
+            connection_count,
+            current_time
+        )
 
     def _remove_old_connections(self, source_ip, current_time):
         """Remove connections outside the configured time window."""
